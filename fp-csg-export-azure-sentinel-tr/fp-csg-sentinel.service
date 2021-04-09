@@ -1,0 +1,10 @@
+[Unit]
+Description=Send Forcepoint CSG web/email logs to Azure Sentinel
+
+[Service]
+Restart=always
+RestartSec=3
+ExecStart=/var/forpcepoint-csg/fp-csg-sentinel run --config /var/forpcepoint-csg/fp-csg-sentinel.yml
+
+[Install]
+WantedBy=multi-user.target
