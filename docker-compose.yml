@@ -7,13 +7,11 @@ services:
     image: docker.frcpnt.com/fp-csg-sentinel:latest
     privileged: true
     environment:
-      - SYSLOG_AGENT_INSTALLATION_COMMAND='${SYSLOG_AGENT_INSTALLATION_COMMAND}'
+      - SYSLOG_AGENT_INSTALLATION_COMMAND=${SYSLOG_AGENT_INSTALLATION_COMMAND}
       - TIMER_TRACKER_DIRECTORY=/root/csg-timer
       - INTERNAL_LOGS_FILE=/var/log/csg-sentinel.log
       - WEB_LOGS_START_DATETIME=${WEB_LOGS_START_DATETIME}
       - EMAIL_LOGS_START_DATETIME=${EMAIL_LOGS_START_DATETIME}
-      - CSG_PASSWORD=${CSG_PASSWORD}
-      - CSG_USERNAME=${CSG_USERNAME}
       - CSG_LOGS_URL=${CSG_LOGS_URL}
       - CSG_WEB_LOGS_INCLUDE=${CSG_WEB_LOGS_INCLUDE}
       - CSG_WEB_LOGS_EXCLUDE=${CSG_WEB_LOGS_EXCLUDE}
@@ -23,13 +21,14 @@ services:
       - CSG_EMAIL_LOGS_INCLUDE=${CSG_EMAIL_LOGS_INCLUDE}
       - CSG_EMAIL_LOGS_EXCLUDE=${CSG_EMAIL_LOGS_EXCLUDE}
       - CSG_VERSION=${CSG_VERSION}
+      - CSG_ENCRYPTED_FILE=/root/csg_encrypted/csg
       - GODEBUG="x509ignoreCN=0"
-
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/log:/var/log
       - /root/csg-timer:/root/csg-timer
+      - /root/csg_encrypted:/root/csg_encrypted
       - /var/lib/docker/containers:/var/lib/docker/containers
     ports:
       - 25224:25224/udp

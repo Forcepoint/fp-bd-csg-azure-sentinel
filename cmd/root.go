@@ -2,19 +2,15 @@ package cmd
 
 import (
 	"fmt"
-	"github.cicd.cloud.fpdev.io/BD/fp-csg-snetinel/lib"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"io"
 	"os"
-
-	"github.com/spf13/viper"
 )
 
 var (
-	cfgFile       string
-	Logger        *logrus.Logger
-	LogDownloader *lib.LogsDownloader
+	cfgFile string
 )
 var rootCmd = &cobra.Command{
 	Use:   "fp-csg-sentinel",
@@ -22,16 +18,19 @@ var rootCmd = &cobra.Command{
 	Long:  ``,
 }
 
-func Execute() {
+func Execute(hashKey string) {
+	viper.Set("hash_key", hashKey)
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		logrus.Error(err)
+		logrus.Exit(1)
 	}
 }
 
 func init() {
-	viper.SetDefault("TIMER_TRACKER_DIRECTORY", "/var/forpcepoint-csg")
-	viper.SetDefault("INTERNAL_LOGS_FILE", "/var/log/csg-sentinel.log")
+	viper.SetDefault("hash_key", "")
+	viper.SetDefault("CSG_ENCRYPTED_FILE", "")
+	viper.SetDefault("TIMER_TRACKER_DIRECTORY", "/home/dlo/test")
+	viper.SetDefault("INTERNAL_LOGS_FILE", "/home/dlo/test/csg-sentinel.log")
 	viper.SetDefault("WEB_LOGS_START_DATETIME", "2020-08-18 18:40:00")
 	viper.SetDefault("EMAIL_LOGS_START_DATETIME", "2020-08-18 18:40:00")
 	viper.SetDefault("CSG_PASSWORD", "")
@@ -67,8 +66,5 @@ func initConfig() {
 	mw := io.MultiWriter(os.Stdout, errorLogFile)
 	logrus.SetOutput(mw)
 	logrus.SetFormatter(&logrus.TextFormatter{})
-	LogDownloader, err = lib.NewLogsDownloader()
-	if err != nil {
-		logrus.Fatalf("failed in creating a LogsDownloader instance '%s'", err.Error())
-	}
+
 }

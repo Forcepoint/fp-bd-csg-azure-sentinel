@@ -3,17 +3,29 @@ package lib
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"golang.org/x/crypto/ssh/terminal"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 	"time"
 )
+
+type CSGCredential struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
 
 func FileExists(filename string) bool {
 	info, err := os.Stat(filename)
@@ -21,6 +33,63 @@ func FileExists(filename string) bool {
 		return false
 	}
 	return !info.IsDir()
+}
+
+func ReadCredentialFromDisk(encryptedFile string) (*CSGCredential, error) {
+	data, err := ioutil.ReadFile(encryptedFile)
+	if err != nil {
+		return nil, err
+	}
+	data, err = DecryptBytes([]byte(viper.GetString("hash_key")), data)
+	if err != nil {
+		return nil, err
+	}
+	var csgCredential CSGCredential
+	if err := json.Unmarshal(data, &csgCredential); err != nil {
+		return nil, err
+	}
+	return &csgCredential, nil
+}
+
+func ReadCredentialFromStdin() ([]byte, error) {
+	username := new(string)
+	for {
+		fmt.Print("Enter Forcepoint CSG username: ")
+		args, err := fmt.Scan(username)
+		if err != nil {
+			logrus.Error(err)
+			continue
+		}
+		if args > 1 {
+			logrus.Error("to many values are passed as username, please enter a valid username")
+			continue
+		}
+		viper.Set("CSG_USERNAME", *username)
+		break
+	}
+	for {
+		fmt.Printf("Enter the password Forcepoint CSG username %s: ", viper.GetString("CSG_USERNAME"))
+		bytePassword, err := terminal.ReadPassword(syscall.Stdin)
+		if err != nil {
+			logrus.Error(err)
+			continue
+		}
+		viper.Set("CSG_PASSWORD", bytePassword)
+		break
+	}
+	csgCredential := CSGCredential{
+		Username: viper.GetString("CSG_USERNAME"),
+		Password: viper.GetString("CSG_PASSWORD"),
+	}
+	csgCredentialBytes, err := json.Marshal(&csgCredential)
+	if err != nil {
+		return nil, err
+	}
+	cipherText, err := EncryptBytes([]byte(viper.GetString("hash_key")), csgCredentialBytes)
+	if err != nil {
+		return nil, err
+	}
+	return cipherText, nil
 }
 
 func GunzipData(data []byte) (resData []byte, err error) {
@@ -165,7 +234,8 @@ func ProcessLogs(logs []map[string]string, include map[string][]string, exclude 
 
 func SendLog(cef string) error {
 	if cef != "CEF:0|Forcepoint CSG||1.0|||0|" && cef != "" {
-		cmdLogger := fmt.Sprintf("logger -n localhost -P 514 -T '%s'", cef)
+		cmdLogger := fmt.Sprintf("logger -n localhost -P 514 -T `echo '%s' | sed 's/\\\\=/\\=/g'`", cef)
+		cmdLogger = strings.ReplaceAll(cmdLogger, "\"", "")
 		_, err := ExecuteCmd(cmdLogger)
 		if err != nil {
 			return err
@@ -205,4 +275,37 @@ func ReverseList(logs []Log) []Log {
 		reversed = append(reversed, logs[i])
 	}
 	return reversed
+}
+
+func EncryptBytes(key, message []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		if strings.Contains(err.Error(), "invalid key size") {
+			return nil, errors.New("invalid encryption key size. the key size must be 16 or 24 or 32")
+		}
+		return nil, err
+	}
+	cipherText := make([]byte, aes.BlockSize+len(message))
+	vi := cipherText[:aes.BlockSize]
+	_, err = io.ReadFull(rand.Reader, vi)
+	if err != nil {
+		return nil, err
+	}
+	cfb := cipher.NewCFBEncrypter(block, vi)
+	//generate the encrypted message and store it in the remaining bytes after vi.
+	cfb.XORKeyStream(cipherText[aes.BlockSize:], message)
+	return cipherText, nil
+}
+
+func DecryptBytes(key, cipherText []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+	vi := cipherText[:aes.BlockSize]
+	cipherText = cipherText[aes.BlockSize:]
+	cfb := cipher.NewCFBDecrypter(block, vi)
+	cfb.XORKeyStream(cipherText, cipherText)
+	return cipherText, nil
+
 }
