@@ -10,13 +10,13 @@ The integration uses compiled code, if you need to recompile the code, an encryp
 to be passed to the compile command. The encryption key is used to encrypt Forcepoint CSG credentials and save
 the encrypted credentials in the integration's host-machine.
 
-- for docker implementation: open the Dockerfile, in the compiler command, add you encryption key as value for **main.encryptionKey** parameter.
+- for docker implementation: open the Dockerfile, in the compile command, add your encryption key as value for **main.encryptionKey** parameter to the compile command.
   for example:
 
    ```
    RUN CGO_ENABLED=0 GOOS=linux go build -mod=vendor -a -installsuffix cgo -ldflags "-X 'main.encryptionKey=MyEncryptionKey1' -extldflags '-static'" -o csg-sentinel .
    ```
-- for traditional implementation: add you encryption key as value for **main.encryptionKey** parameter.
+- for traditional implementation: add your encryption key as value for **main.encryptionKey** parameter.
   for example:
 
   ```
