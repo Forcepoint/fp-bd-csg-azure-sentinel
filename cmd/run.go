@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"github.cicd.cloud.fpdev.io/BD/fp-csg-snetinel/lib"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -15,6 +14,17 @@ var runCmd = &cobra.Command{
 	Short: "run the integration",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
+		if viper.GetBool("csg_creds_flag") {
+			cipherText, err := lib.ReadCredentialFromStdin()
+			if err != nil {
+				logrus.Error(err)
+				logrus.Exit(1)
+			}
+			if err := ioutil.WriteFile(viper.GetString("CSG_ENCRYPTED_FILE"), cipherText, 0666); err != nil {
+				logrus.Error(err)
+				logrus.Exit(1)
+			}
+		}
 		if !lib.FileExists(viper.GetString("CSG_ENCRYPTED_FILE")) {
 			cipherText, err := lib.ReadCredentialFromStdin()
 			if err != nil {
@@ -25,6 +35,7 @@ var runCmd = &cobra.Command{
 				logrus.Error(err)
 				logrus.Exit(1)
 			}
+
 		} else {
 			// read credentials from encrypted file
 			csgCredential, err := lib.ReadCredentialFromDisk(viper.GetString("CSG_ENCRYPTED_FILE"))
@@ -59,7 +70,6 @@ var runCmd = &cobra.Command{
 }
 
 func process(logDownloader *lib.LogsDownloader, include map[string][]string, exclude map[string][]string, category string) {
-	fmt.Println("in we process")
 	logs, err := logDownloader.TackLogs(category)
 	if err != nil {
 		logrus.Error(err)
@@ -81,4 +91,9 @@ func process(logDownloader *lib.LogsDownloader, include map[string][]string, exc
 
 func init() {
 	rootCmd.AddCommand(runCmd)
+	runCmd.Flags().BoolP("creds", "c", true, "Read CSG Creds and save them on disk as encrypted file")
+	if err := viper.BindPFlag("csg_creds_flag",
+		runCmd.Flags().Lookup("creds")); err != nil {
+		logrus.Fatal(err.Error())
+	}
 }

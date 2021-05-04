@@ -28,9 +28,9 @@ func Execute(hashKey string) {
 
 func init() {
 	viper.SetDefault("hash_key", "")
-	viper.SetDefault("CSG_ENCRYPTED_FILE", "")
-	viper.SetDefault("TIMER_TRACKER_DIRECTORY", "/home/dlo/test")
-	viper.SetDefault("INTERNAL_LOGS_FILE", "/home/dlo/test/csg-sentinel.log")
+	viper.SetDefault("CSG_ENCRYPTED_FILE", "/var/forpcepoint-csg/csg")
+	viper.SetDefault("TIMER_TRACKER_DIRECTORY", "/var/forpcepoint-csg")
+	viper.SetDefault("INTERNAL_LOGS_FILE", "/var/forpcepoint-csg/csg-sentinel.log")
 	viper.SetDefault("WEB_LOGS_START_DATETIME", "2020-08-18 18:40:00")
 	viper.SetDefault("EMAIL_LOGS_START_DATETIME", "2020-08-18 18:40:00")
 	viper.SetDefault("CSG_PASSWORD", "")
@@ -45,6 +45,7 @@ func init() {
 	viper.SetDefault("DISPLAY_SENT_LOGS_INFO", true)
 	viper.SetDefault("SEND_WEB_LOGS", true)
 	viper.SetDefault("SEND_EMAIL_LOGS", true)
+	viper.SetDefault("csg_creds_flag", false)
 
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file ")

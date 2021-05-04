@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  fpa-log-server:
+  csg-sentinel-service:
     container_name: csg-sentinel
     hostname: csg-sentinel
     image: docker.frcpnt.com/fp-csg-sentinel:latest
