@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io/ioutil"
+	"os"
 	"time"
 )
 
@@ -24,6 +25,7 @@ var runCmd = &cobra.Command{
 				logrus.Error(err)
 				logrus.Exit(1)
 			}
+			os.Exit(0)
 		}
 		if !lib.FileExists(viper.GetString("CSG_ENCRYPTED_FILE")) {
 			cipherText, err := lib.ReadCredentialFromStdin()
