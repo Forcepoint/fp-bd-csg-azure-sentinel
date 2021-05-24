@@ -184,7 +184,7 @@ func ElementInList(l []string, element string) bool {
 	return false
 }
 
-func ProcessLogs(logs []map[string]string, include map[string][]string, exclude map[string][]string, category string) {
+func ProcessLogs(logs []map[string]string, include map[string][]string, exclude map[string][]string, category string) error {
 	for _, v := range logs {
 		cef := ""
 		displayInfo := ""
@@ -198,12 +198,11 @@ func ProcessLogs(logs []map[string]string, include map[string][]string, exclude 
 			var csgLogStruct CsgLogWeb
 			err := mapstructure.Decode(v, &csgLogStruct)
 			if err != nil {
-				logrus.Error(err)
+				return err
 			}
 			cef, err = CreateCommonEventFormatWeb(csgLogStruct)
 			if err != nil {
-				logrus.Error(err)
-				continue
+				return err
 			}
 			displayInfo = fmt.Sprintf("sent web log to sentinel: policy Name:%s, SourceIp=%s, User:%s",
 				csgLogStruct.PolicyName, csgLogStruct.SourceIP, csgLogStruct.User)
@@ -211,18 +210,17 @@ func ProcessLogs(logs []map[string]string, include map[string][]string, exclude 
 			var csgLogStruct CsgLogEmail
 			err := mapstructure.Decode(v, &csgLogStruct)
 			if err != nil {
-				logrus.Error(err)
+				return err
 			}
 			cef, err = CreateCommonEventFormatEmail(csgLogStruct)
 			if err != nil {
-				logrus.Error(err)
-				continue
+				return err
 			}
 			displayInfo = fmt.Sprintf("sent email log to sentinel: policy Name:%s, Recipient Address=%s, Action:%s",
 				csgLogStruct.PolicyName, csgLogStruct.RecipientAddress, csgLogStruct.Action)
 		}
 		if err := SendLog(cef); err != nil {
-			logrus.Error(err)
+			return err
 		} else {
 			if viper.GetBool("DISPLAY_SENT_LOGS_INFO") {
 				logrus.Info(displayInfo)
@@ -230,6 +228,7 @@ func ProcessLogs(logs []map[string]string, include map[string][]string, exclude 
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
+	return nil
 }
 
 func SendLog(cef string) error {

@@ -115,7 +115,7 @@ func (d *LogsDownloader) ListLogs(category string) (*Logs, error) {
 		return nil, errors.New(fmt.Sprintf("got an empty response from %s ", url))
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf("Got http statusCode: %d", http.StatusOK))
+		return nil, errors.New(fmt.Sprintf("Got http statusCode: %d, status: %s", resp.StatusCode, resp.Status))
 	}
 	defer resp.Body.Close()
 
